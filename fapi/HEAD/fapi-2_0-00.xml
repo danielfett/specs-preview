@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.miek.nl" -->
+<rfc version="3" ipr="trust200902" docName="fapi-2_0-00" submissionType="IETF" category="std" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" consensus="true">
+
+<front>
+<title abbrev="fapi-evolution">FAPI 2.0 Baseline Profile</title><seriesInfo value="fapi-2_0-00" status="standard" name="Internet-Draft"></seriesInfo>
+<author initials="D." surname="Fett" fullname="Daniel Fett"><organization>yes.com</organization><address><postal><street></street>
+</postal><email>mail@danielfett.de</email>
+</address></author>
+<date/>
+<area>Internet</area>
+<workgroup>connect</workgroup>
+<keyword>security</keyword>
+<keyword>openid</keyword>
+
+<abstract>
+<t>OIDF FAPI 2.0 is an API security profile based on the OAuth 2.0
+Authorization Framework <xref target="RFC6749"></xref>.</t>
+</abstract>
+
+</front>
+
+<middle>
+
+<section anchor="introduction"><name>Introduction</name>
+
+<section anchor="warning"><name>Warning</name>
+<t>This document is not an OIDF International Standard. It is distributed
+for review and comment. It is subject to change without notice and may
+not be referred to as an International Standard.</t>
+<t>Recipients of this draft are invited to submit, with their comments,
+notification of any relevant patent rights of which they are aware and
+to provide supporting documentation.</t>
+</section>
+
+<section anchor="copyright-notice-license"><name>Copyright notice &amp; license</name>
+<t>The OpenID Foundation (OIDF) grants to any Contributor, developer,
+implementer, or other interested party a non-exclusive, royalty free,
+worldwide copyright license to reproduce, prepare derivative works
+from, distribute, perform and display, this Implementers Draft or
+Final Specification solely for the purposes of (i) developing
+specifications, and (ii) implementing Implementers Drafts and Final
+Specifications based on such documents, provided that attribution be
+made to the OIDF as the source of the material, but that such
+attribution does not indicate an endorsement by the OIDF.</t>
+<t>The technology described in this specification was made available from
+contributions from various sources, including members of the OpenID
+Foundation and others. Although the OpenID Foundation has taken steps
+to help ensure that the technology is available for distribution, it
+takes no position regarding the validity or scope of any intellectual
+property or other rights that might be claimed to pertain to the
+implementation or use of the technology described in this
+specification or the extent to which any license under such rights
+might or might not be available; neither does it represent that it has
+made any independent effort to identify any such rights. The OpenID
+Foundation and the contributors to this specification make no (and
+hereby expressly disclaim any) warranties (express, implied, or
+otherwise), including implied warranties of merchantability,
+non-infringement, fitness for a particular purpose, or title, related
+to this specification, and the entire risk as to implementing this
+specification is assumed by the implementer. The OpenID Intellectual
+Property Rights policy requires contributors to offer a patent promise
+not to assert certain patent claims against other contributors and
+against implementers. The OpenID Foundation invites any interested
+party to bring to its attention any copyrights, patents, patent
+applications, or other proprietary rights that may cover technology
+that may be required to practice this specification.</t>
+</section>
+
+<section anchor="notational-conventions"><name>Notational Conventions</name>
+<t>The key words &quot;MUST&quot;, &quot;MUST NOT&quot;, &quot;REQUIRED&quot;, &quot;SHALL&quot;, &quot;SHALL NOT&quot;,
+&quot;SHOULD&quot;, &quot;SHOULD NOT&quot;, &quot;RECOMMENDED&quot;, &quot;NOT RECOMMENDED&quot;, &quot;MAY&quot;, and
+&quot;OPTIONAL&quot; in this document are to be interpreted as described in RFC
+2119 [RFC2119].</t>
+</section>
+</section>
+
+<section anchor="baseline-profile"><name>Baseline Profile</name>
+<t>OIDF FAPI is an API security profile based on the OAuth 2.0
+Authorization Framework <xref target="RFC6749"></xref>. It aims to reach the security
+goals laid out in the [Attacker Model].</t>
+
+<section anchor="network-layer-protections"><name>Network Layer Protections</name>
+<t>To protect against network attackers, clients, authorization servers,
+and resource servers MUST only offer TLS protected endpoints and MUST
+establish connections to other servers using TLS. TLS connections MUST
+be set up to use TLS version 1.2 or later and follow <xref target="RFC7525"></xref>.</t>
+<t>Endpoints for the use by web browsers MUST use methods to ensure that
+connections cannot be downgraded using TLS Stripping attacks. A
+preloaded <xref target="preload"></xref> HTTP Strict Transport Security policy <xref target="RFC6797"></xref>
+can be used for this purpose. Some top-level domains, like .bank and
+.insurance, have set such a policy and therefore protect all
+second-level domains below them.</t>
+<t>For a comprehensive protection against network attackers, all
+endpoints SHOULD additionally use DNSSEC to protect against DNS
+spoofing attacks that can lead to the issuance of rogue
+domain-validated TLS certificates. Note: Even if an endpoint uses only
+organization validated (OV) or extended validation (EV) TLS
+certificates, rogue domain-validated certificates can be used to
+impersonate the endpoints and conduct man-in-the-middle attacks.</t>
+</section>
+
+<section anchor="profile"><name>Profile</name>
+<t>In the following, a profile of the following technologies is defined:</t>
+
+<ul>
+<li><t>OAuth 2.0 Authorization Framework <xref target="RFC6749"></xref></t>
+</li>
+<li><t>OAuth 2.0 Bearer Tokens <xref target="RFC6750"></xref></t>
+</li>
+<li><t>OAuth 2.0 PKCE <xref target="RFC7636"></xref></t>
+</li>
+<li><t>OAuth 2.0 Mutual-TLS Client Authentication <xref target="RFC8705"></xref></t>
+</li>
+<li><t>OAuth 2.0 Pushed Authorization Requests (PAR) <xref target="I-D.lodderstedt-oauth-par"></xref></t>
+</li>
+<li><t>OAuth 2.0 Rich Authorization Requests (RAR) <xref target="I-D.lodderstedt-oauth-rar"></xref></t>
+</li>
+<li><t>OAuth 2.0 Authorization Server Metadata <xref target="RFC8414"></xref></t>
+</li>
+<li><t>OpenID Connect Core 1.0 incorporating errata set 1 <xref target="OpenID"></xref></t>
+</li>
+</ul>
+
+<section anchor="requirements-for-authorization-servers"><name>Requirements for Authorization Servers</name>
+<t>Authorization servers</t>
+
+<ol>
+<li><t>MUST adhere to <xref target="I-D.ietf-oauth-security-topics"></xref></t>
+</li>
+<li><t>MUST support the authorization code grant described in <xref target="RFC6749"></xref></t>
+</li>
+<li><t>MUST support client-authenticated pushed authorization requests
+according to <xref target="I-D.lodderstedt-oauth-par"></xref></t>
+</li>
+<li><t>MUST NOT support authorization requests sent without
+<xref target="I-D.lodderstedt-oauth-par"></xref> or authorization request parameters
+sent outside of the PAR request, except for
+<tt>request_uri</tt></t>
+</li>
+<li><t>MUST NOT support pushed authorization requests without client authentication</t>
+</li>
+<li><t>MUST support rich authorization requests according to <xref target="I-D.lodderstedt-oauth-rar"></xref></t>
+</li>
+<li><t>MUST support confidential clients as defined in <xref target="RFC6749"></xref></t>
+</li>
+<li><t>MUST support and sender-constraining of access tokens using Mutual TLS as described in <xref target="RFC8705"></xref></t>
+</li>
+<li><t>MUST authenticate clients using one of the following methods:</t>
+
+<ol>
+<li><t>Mutual TLS for OAuth Client Authentication as specified in section 2 of <xref target="RFC8705"></xref></t>
+</li>
+<li><t><tt>private_key_jwt</tt> as specified in section 9 of <xref target="OpenID"></xref></t>
+</li>
+</ol></li>
+<li><t>MUST require PKCE <xref target="RFC7636"></xref> with <tt>S256</tt> as the code challenge method</t>
+</li>
+<li><t>MUST only issue authorization codes, access tokens, and refresh tokens that are sender-constrained</t>
+</li>
+<li><t>MUST require the <tt>redirect_uri</tt> parameter in authorization requests and evaluate only this parameter to ensure authenticity and integrity of the redirect URI</t>
+</li>
+<li><t>MUST require that redirect URIs use the <tt>https</tt> scheme</t>
+</li>
+<li><t>MUST verify, if possible, that the authorization code (section 1.3.1 of [RFC6749]) has not been previously used</t>
+</li>
+<li><t>MUST provide a means for resource servers to verify the validity, integrity, sender-constraining, scope (incl. <tt>authorization_details</tt>), expiration and revocation status of an access token, either by providing an introspection endpoint <xref target="RFC7662"></xref>, by exposing signature verification keys, or by deployment-specific means.</t>
+</li>
+</ol>
+<t><strong>NOTE</strong>: If replay identification of the authorization code is not possible, it is desirable to set the validity period of the authorization code to one minute or a suitable short period of time. The validity period may act as a cache control indicator of when to clear the authorization code cache if one is used.</t>
+
+<section anchor="returning-authenticated-user-s-identifier"><name>Returning Authenticated User's Identifier</name>
+<t>If it is desired to provide the authenticated user's identifier to the client in the token response, the authorization server:</t>
+
+<ol>
+<li><t>MUST support the authentication request as in Section 3.1.2.1 of <xref target="OpenID"></xref></t>
+</li>
+<li><t>MUST perform the authentication request verification as in Section 3.1.2.2 of <xref target="OpenID"></xref></t>
+</li>
+<li><t>MUST authenticate the user as in Section 3.1.2.2 and 3.1.2.3 of <xref target="OpenID"></xref></t>
+</li>
+<li><t>MUST provide the authentication response as in Section 3.1.2.4 and 3.1.2.5 of <xref target="OpenID"></xref> depending on the outcome of the authentication</t>
+</li>
+<li><t>MUST perform the token request verification as in Section 3.1.3.2 of <xref target="OpenID"></xref></t>
+</li>
+<li><t>MUST issue an ID Token in the token response when <tt>openid</tt> was included in the requested <tt>scope</tt>
+as in Section 3.1.3.3 of <xref target="OpenID"></xref> with its <tt>sub</tt> value corresponding to the authenticated user
+and optional <tt>acr</tt> value in ID Token.</t>
+</li>
+</ol>
+</section>
+</section>
+
+<section anchor="requirements-for-clients"><name>Requirements for Clients</name>
+<t>Clients</t>
+
+<ol>
+<li><t>MUST use the authorization code grant described in <xref target="RFC6749"></xref></t>
+</li>
+<li><t>MUST use pushed authorization requests according to
+<xref target="I-D.lodderstedt-oauth-par"></xref></t>
+</li>
+<li><t>MUST use sender-constrained access
+tokens using Mutual TLS as described in <xref target="RFC8705"></xref></t>
+</li>
+<li><t>MUST support client authentication using one of the following methods:</t>
+
+<ol>
+<li><t>Mutual TLS for OAuth Client Authentication as specified in section 2 of <xref target="RFC8705"></xref></t>
+</li>
+<li><t><tt>private_key_jwt</tt> as specified in section 9 of <xref target="OpenID"></xref></t>
+</li>
+</ol></li>
+<li><t>MUST use PKCE <xref target="RFC7636"></xref> with <tt>S256</tt> as the code challenge method</t>
+</li>
+<li><t>MUST send access tokens in the HTTP header as in Section 2.1 of
+OAuth 2.0 Bearer Token Usage [RFC6750]</t>
+</li>
+<li><t>MAY send the last time the customer logged into the client in the
+<tt>x-fapi-auth-date</tt> header where the value is supplied as a
+HTTP-date as in section 7.1.1.1 of [RFC7231], e.g.,
+<tt>x-fapi-auth-date: Tue, 11 Sep 2012 19:43:31 GMT</tt></t>
+</li>
+<li><t>MAY send the customer’s IP address if this data is available in
+the <tt>x-fapi-customer-ip-address</tt> header, e.g.,
+<tt>x-fapi-customer-ip-address: 198.51.100.119</tt></t>
+</li>
+<li><t>MAY send the <tt>x-fapi-interaction-id</tt> request header whose value is
+a [RFC4122] UUID to the server to help correlate log entries
+between client and server, e.g., <tt>x-fapi-interaction-id:
+c770aef3-6784-41f7-8e0e-ff5f97bddb3a</tt></t>
+</li>
+</ol>
+</section>
+
+<section anchor="requirements-for-resource-servers"><name>Requirements for Resource Servers</name>
+<t>The FAPI 2.0 endpoints are OAuth 2.0 protected resource endpoints that return protected information for the resource owner associated with the submitted access token.</t>
+<t>Resource servers with the FAPI endpoints</t>
+
+<ol>
+<li><t>MUST accept access tokens in the HTTP header as in Section 2.1 of OAuth 2.0 Bearer Token Usage [RFC6750]</t>
+</li>
+<li><t>MUST not accept access tokens in the query parameters stated in Section 2.3 of OAuth 2.0 Bearer Token Usage [RFC6750]</t>
+</li>
+<li><t>MUST verify the validity, integrity, expiration and revocation status of access tokens</t>
+</li>
+<li><t>MUST verify that the scope (incl. <tt>authorization_details</tt>) of the access token authorizes the access to the resource it is representing</t>
+</li>
+<li><t>MUST verify sender-constraining for access tokens</t>
+</li>
+<li><t>MUST identify the associated entity to the access token</t>
+</li>
+<li><t>MUST only return the resource identified by the combination of the entity implicit in the access and the granted scope and otherwise return errors as in section 3.1 of [RFC6750]</t>
+</li>
+<li><t>MUST set the response header <tt>x-fapi-interaction-id</tt> to the value received from the corresponding fapi client request header or to a [RFC4122] UUID value if the request header was not provided to track the interaction, e.g., <tt>x-fapi-interaction-id: c770aef3-6784-41f7-8e0e-ff5f97bddb3a</tt></t>
+</li>
+<li><t>MUST log the value of <tt>x-fapi-interaction-id</tt> in the log entry</t>
+</li>
+</ol>
+</section>
+</section>
+
+<section anchor="cryptography-and-secrets"><name>Cryptography and Secrets</name>
+
+<ol>
+<li><t>RSA keys MUST have a minimum length of 2048 bits.</t>
+</li>
+<li><t>Elliptic curve keys MUST have a minimum length of 160 bits.</t>
+</li>
+<li><t>authorization servers MUST provide a client secret that adheres to the requirements in section 16.19 of <xref target="OpenID"></xref> if a symmetric key is used</t>
+</li>
+<li><t>Access tokens MUST be non-guessable with a minimum of 128 bits of entropy where the probability of an attacker guessing the generated token is less than or equal to 2^(-160) as per [RFC6749] section 10.10.</t>
+</li>
+</ol>
+</section>
+
+<section anchor="differences-to-fapi-1-0"><name>Differences to FAPI 1.0</name>
+<table>
+<thead>
+<tr>
+<th align="left">FAPI 1.0 Read/Write</th>
+<th align="left">FAPI 2.0</th>
+<th align="left">Reasons</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td align="left">JAR, JARM</td>
+<td align="left">PAR</td>
+<td align="left">integrity protection and compatibility improvements for authorization requests; only code in response</td>
+</tr>
+
+<tr>
+<td align="left">-</td>
+<td align="left">RAR</td>
+<td align="left">support complex and structured information about authorizations</td>
+</tr>
+
+<tr>
+<td align="left">-</td>
+<td align="left">MUST adhere to Security BCP</td>
+<td align="left"></td>
+</tr>
+
+<tr>
+<td align="left"><tt>s_hash</tt></td>
+<td align="left">-</td>
+<td align="left">state integrity is protected by PAR; protection provided by state is now provided by PKCE</td>
+</tr>
+
+<tr>
+<td align="left">pre-registered redirect URIs</td>
+<td align="left">redirect URIs in PAR</td>
+<td align="left">pre-registration is not required with client authentication and PAR</td>
+</tr>
+
+<tr>
+<td align="left">response types <tt>code id_token</tt> or <tt>code</tt></td>
+<td align="left">response type <tt>code</tt></td>
+<td align="left">improve security: no ID token in front-channel; not needed</td>
+</tr>
+
+<tr>
+<td align="left">ID Token as detached signature</td>
+<td align="left">-</td>
+<td align="left">ID token does not need to serve as a detached signature</td>
+</tr>
+
+<tr>
+<td align="left">signed and encrypted ID Tokens</td>
+<td align="left">signing and encryption not required</td>
+<td align="left">ID Tokens only exchanged in back channel</td>
+</tr>
+
+<tr>
+<td align="left"><tt>exp</tt> claim in request object</td>
+<td align="left">-</td>
+<td align="left">?</td>
+</tr>
+</tbody>
+</table></section>
+
+<section anchor="open-questions"><name>Open questions:</name>
+
+<ul>
+<li><t>disallow scopes? if yes, use RAR transport for openid claim</t>
+</li>
+<li><t>Response types? ID Token in front channel?</t>
+</li>
+<li><t></t>
+</li>
+<li><t>lifetime for request objects?</t>
+</li>
+<li><t>(to be moved to grant management):</t>
+
+<ul>
+<li><t>shall require explicit consent by the user to authorize the requested scope if it has not been previously authorized;</t>
+</li>
+<li><t>should clearly identify long-term grants to the user during authorization as in 16.18 of <xref target="OpenID"></xref>; and</t>
+</li>
+<li><t>should provide a mechanism for the end-user to revoke access tokens and refresh tokens granted to a client as in 16.18 of <xref target="OpenID"></xref>.</t>
+</li>
+</ul></li>
+<li><t>(relevance/meaning unclear):</t>
+
+<ul>
+<li><t>shall return token responses that conform to section 4.1.4 of [RFC6749];</t>
+</li>
+<li><t>shall return an invalid_client error as defined in 5.2 of [RFC6749] when mis-matched client identifiers were provided through the client authentication methods that permits sending the client identifier in more than one way;</t>
+</li>
+<li><t>The Financial-grade API server may limit the scopes for the purpose of not implementing certain APIs.</t>
+</li>
+<li><t>(RS) MUST encode the response in UTF-8 if applicable;</t>
+</li>
+<li><t>(RS) MUST send the <tt>Content-type</tt> HTTP header <tt>Content-Type: application/json; charset=UTF-8</tt> if applicable;</t>
+</li>
+<li><t>(RS) MUST send the server date in HTTP Date header as in section 7.1.1.2 of [RFC7231];</t>
+</li>
+<li><t>(RS) SHOULD support CORS for JS clients</t>
+</li>
+</ul></li>
+<li><t>Check Sections 7/8</t>
+</li>
+</ul>
+</section>
+</section>
+
+</middle>
+
+<back>
+<references><name>Normative References</name>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7525.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7636.xml"/>
+<reference anchor="OpenID" target="http://openid.net/specs/openid-connect-core-1_0.html">
+  <front>
+    <title>OpenID Connect Core 1.0 incorporating errata set 1</title>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura">
+      <organization>NRI</organization>
+    </author>
+    <author fullname="John Bradley" initials="J." surname="Bradley">
+      <organization>Ping Identity</organization>
+    </author>
+    <author fullname="Mike Jones" initials="M." surname="Jones">
+      <organization>Microsoft</organization>
+    </author>
+    <author fullname="Breno de Medeiros" initials="B." surname="de Medeiros">
+      <organization>Google</organization>
+    </author>
+    <author fullname="Chuck Mortimore" initials="C." surname="Mortimore">
+      <organization>Salesforce</organization>
+    </author>
+    <date year="2014" month="Nov" day="8"></date>
+  </front>
+</reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7662.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6749.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6797.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8705.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8414.xml"/>
+</references>
+<references><name>Informative References</name>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.lodderstedt-oauth-rar.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.lodderstedt-oauth-par.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-security-topics.xml"/>
+<reference anchor="preload" target="https://hstspreload.org/">
+  <front>
+    <title>HSTS Preload List Submission</title>
+    <author fullname="Anonymous">
+      <organization></organization>
+    </author>
+    <date></date>
+  </front>
+</reference>
+</references>
+
+</back>
+
+</rfc>

@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.miek.nl" -->
+<rfc version="3" ipr="none" docName="fapi-grant-management-00" submissionType="IETF" category="std" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" consensus="true">
+
+<front>
+<title abbrev="fapi-grant-management">Grant Management for OAuth 2.0</title><seriesInfo value="fapi-grant-management-00" status="standard" name="Internet-Draft"></seriesInfo>
+<author initials="T." surname="Lodderstedt" fullname="Torsten Lodderstedt"><organization>yes.com</organization><address><postal><street></street>
+</postal><email>torsten@lodderstedt.net</email>
+</address></author>
+<author initials="S." surname="Low" fullname="Stuart Low"><organization>biza.io</organization><address><postal><street></street>
+</postal><email>stuart@biza.io</email>
+</address></author>
+<author initials="D." surname="Postnikov" fullname="Dima Postnikov"><organization></organization><address><postal><street></street>
+</postal><email>dima@postnikov.net</email>
+</address></author>
+<date/>
+<area>Internet</area>
+<workgroup>fapi</workgroup>
+<keyword>security</keyword>
+<keyword>oauth</keyword>
+<keyword>grant management</keyword>
+<keyword>consent management</keyword>
+
+<abstract>
+<t>This specification defines an extension of OAuth 2.0 to allow clients to explicitely manage their grants with the authorization server.</t>
+</abstract>
+
+</front>
+
+<middle>
+
+<section anchor="Introduction"><name>Introduction</name>
+<t>OAuth authorization servers issue access and refresh tokens based on privileges granted by a resource owner to a particular client in the course of an authorization process or based on pre-configured policies. The concept representing these privileges and their assignment to a particular client is sometimes referred to a the &quot;underlying grant&quot;.</t>
+<t>Although this concept is fundamental to OAuth, there is no explicit representation of the grant in the OAuth protocol. This leads to the situation that clients cannot explicitely manage grants, e.g. query the status or revoke a grant that is no longer needed. The status is implicitely communicated if an access token refresh succeeds or fails or if an API call using an access token fails with HTTP status codes 401 (token is invalid) or 403 (token lacks privileges).</t>
+<t>It also means the client cannot explictely ask the authorization server to update a certain grant that is bound to a certain user. Instead the authorization server, typically, will determine a pre-existing grant using the client id from the authorization request and the user id of the authenticated resource owner.</t>
+<t>If a client wants the authorization server to update a pre-existing grant, it needs to obtain identity data about the user and utilize it in a login hint kind of parameter to refer to the &quot;same user as last time&quot;, exposing more identity data to the client than neccessary.</t>
+<t>Another pattern that was proposed is to use refresh tokens to refer to grants. This would require to send the refresh token as part of the authorization request through the front channel, which posses security issues since the refresh token is a credential and could leak and be injected that way.</t>
+<t>There are also use cases in highly regulated sectors, e.g. Open Data, where the client might be forced to maintain concurrent, independent grants to represent the privileges delegated by the resource owner to this client in the context of a distinct service offered by the client to this user.</t>
+<t>In order to support the before mentioned use cases, this specification introduces a <tt>grant_id</tt> clients can use to identify a particular grant along with extensions to the OAuth protocol flow to obtain and pass such grant ids. This specification also defines a new API provided by the authorization server that clients can use to query the status of a grant and to revoke it.</t>
+
+<section anchor="terminology"><name>Terminology</name>
+
+<ul>
+<li><t>Grant: resource managed by the authorization server representing the privileges delegated by a resource owner to a certain client.</t>
+</li>
+<li><t>Grant Management API: a HTTP-based API provided by the authorization server that clients can use to query the status of and revoke grants.</t>
+</li>
+</ul>
+</section>
+</section>
+
+<section anchor="overview"><name>Overview</name>
+<t>An authorization server supporting this extension allows a client to explitely manage its grants. The basic design principle is that disclosure, creation and update of grants is always requested using an OAuth authorization request while querying the status of a grant and revoking it is performed using the new Grant Management API.</t>
+<t>The underlying assumption is that creation and updates of grants almost always require interaction with the resource owner. Moreover, the client is supposed to manage the grant ids along with the respective tokens on its own without support from the authorization server.</t>
+</section>
+
+<section anchor="oauth-protocol-extensions"><name>OAuth Protocol Extensions</name>
+
+<section anchor="authorization-request"><name>Authorization Request</name>
+<t>This specification introduces the following new authorization request parameters:</t>
+<t><tt>grant_id</tt>: string value identifying an individual grant managed by a particular authorization server for a certain client and a certain resource owner. The <tt>grant_id</tt> value MUST be unique in the context of the authorization server that issued it.</t>
+<t><tt>grant_mode</tt>: string value controlling the way the authorization shall handle the grant when processing an authorization request. The defined values of <tt>grant_mode</tt> are:</t>
+
+<ul>
+<li><t><tt>get</tt>: the authorization server determines the grant based on the <tt>client_id</tt> of the authorization request and the user id of the resource owner determined via user authentication and provides the grant id in the corresponding token response.</t>
+</li>
+<li><t><tt>new</tt>: the authorization server will create a fresh grant irrespective of any pre-existing grant for the client identified by the <tt>client_id</tt> in the autorization request and the resource owner identified by the user authentication (including Single SignOn). The authorization server will provide the client with the <tt>grant_id</tt> of the new grant in the corresponding token response.</t>
+</li>
+<li><t><tt>set</tt>: this mode requires the client to specify a grant id using the <tt>grant_id</tt> parameter. It requests the authorization server to use a certain grant when processing the authorization request. The authorization server SHOULD attempt to update the privileges associated with this grant as result of the authorization process. This mode can be used to ensure the authorization process is performed by the same user that originally approved a certain grant and results in updated privileges for this grant.</t>
+</li>
+<li><t><tt>reset</tt>: this mode requires the client to specify a grant id using the <tt>grant_id</tt> parameter. It requests the authorization server to use a certain grant when processing the authorization request, to revoke all privileges associated with this grant but keep the grant itself and add any privileges as requested by the client and approved by the resource owner in the course of the processing of this authorization request. This mode can be used to ensure the authorization process is performed by the same user that originally approved a certain grant while removing all previously assigned privileges.</t>
+</li>
+</ul>
+<t>The following example</t>
+
+<sourcecode type="http">GET /authorize?response_type=code&amp;
+     client_id=s6BhdRkqt3
+     &amp;grant_mode=get
+     &amp;scope=read
+     &amp;redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+     &amp;code_challenge_method=S256
+     &amp;code_challenge=K2-ltc83acc4h... HTTP/1.1
+Host: as.example.com 
+</sourcecode>
+<t>shows an authorization request asking the authorization server to provide the client with a grant id whereas this example</t>
+
+<sourcecode type="http">GET /authorize?rresponse_type=code&amp;
+     client_id=s6BhdRkqt3
+     &amp;grant_mode=set
+     &amp;grant_id=4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25
+     &amp;scope=read
+     &amp;redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+     &amp;code_challenge_method=S256
+     &amp;code_challenge=K2-ltc83acc4h... HTTP/1.1
+Host: as.example.com 
+</sourcecode>
+<t>shows how a client can force the authorization server to use a certain grant id (previously obtained using <tt>get</tt>).</t>
+</section>
+
+<section anchor="authorization-response"><name>Authorization Response</name>
+
+<section anchor="error-response"><name>Error Response</name>
+<t>In case the <tt>grant_mode</tt> is <tt>set</tt> or <tt>reset</tt> but the <tt>grant_id</tt> is unknown or invalid, the authorization server will respond with an error code <tt>invalid_grant_id</tt>.</t>
+</section>
+</section>
+
+<section anchor="token-request"><name>Token Request</name>
+<t>The <tt>grant_mode</tt> and <tt>grant_id</tt> parameters MAY be added to the token request in case this request is also an authorization request.</t>
+</section>
+
+<section anchor="token-response"><name>Token Response</name>
+<t>This specification introduces the following new token response parameter:</t>
+<t><tt>grant_id</tt>: URL safe string value identifying an individual grant managed by a particular authorization server for a certain client and a certain resource owner. The <tt>grant_id</tt> value MUST be unique in the context of a certain authorization server and SHOULD have enough entropy to make it impractical to guess it.</t>
+<t>It is RECOMMENDED that the output of a suitable random number generator be used to create a 32-octet sequence.  The octet sequence is then base64url-encoded to produce a 43-octet URL safe string to use as the code verifier.</t>
+
+<sourcecode type="http">HTTP/1.1 200 OK
+Content-Type: application/json
+Cache-Control: no-cache, no-store
+
+{
+   &quot;access_token&quot;: &quot;2YotnFZFEjr1zCsicMWpAA&quot;,
+   &quot;token_type&quot;: &quot;example&quot;,
+   &quot;expires_in&quot;: 3600,
+   &quot;refresh_token&quot;: &quot;tGzv3JOkF0XG5Qx2TlKWIA&quot;,
+   “grant_id”:”4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25”
+}
+</sourcecode>
+<t>OPEN:</t>
+
+<ul>
+<li><t>Should the AS always return the grant_id if the client once asked for it?</t>
+</li>
+<li><t>Should the AS rotate grant ids for privacy reasons?</t>
+</li>
+</ul>
+</section>
+</section>
+
+<section anchor="grant-management-api"><name>Grant Management API</name>
+<t>The Grant Management API allows clients to query the status of a grant whose <tt>grant_id</tt> the client previously obtained from the authorization server in a token response. The API also allows the client to revoke such a grant.</t>
+<t>The Grant Management API does not provide bulk access to all grants of a certain client for functional and privacy reasons. Every grant is associated with a certain resource owner, so just getting the status is useless for the client as long as there is not indication of the user the client can use this grant for. Adding user identity data to the status data would weaken the privacy protection OAuth offers for users towards a client.</t>
+<t>The Grant Management API will not expose any tokens associated with a certain grant in order to prevent token leakage.</t>
+<t>The client is supposed to manage its grants along with the respective tokens and ensure its usage in the correct user context.</t>
+
+<section anchor="api-authorization"><name>API authorization</name>
+<t>Using the grant management API requires the client to obtain an access token authorized for this API. The grant type the client uses to obtain this access token is out of scope of this specification.</t>
+<t>The token is required to be associated with the following scope value:</t>
+<t><tt>grant_management_query</tt>: scope value the client uses to request an access token to query the status of its grants.</t>
+<t><tt>grant_management_revoke</tt>: scope value the client uses to request an access token to revoke its grants.</t>
+</section>
+
+<section anchor="endpoint"><name>Endpoint</name>
+<t>The grant management API is provided by a new endpoint provided by the authorization server. The client MAY utilize the server metadata parameter <tt>grant_management_endpoint</tt> to obtain the endpoint URL.</t>
+</section>
+
+<section anchor="grant-resource-url"><name>Grant Resource URL</name>
+<t>The resource URL for a certain grant is built by concatinating the grant management endpoint URL, a shlash, and the the <tt>grant_id</tt>. For example, if the grant management endpoint is defined as</t>
+
+<artwork>https://as.example.com/grants
+</artwork>
+<t>and the <tt>grant_id</tt> is</t>
+
+<artwork>4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25
+</artwork>
+<t>the resulting resource URL would be</t>
+
+<artwork>https://as.example.com/grants/4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25 
+</artwork>
+</section>
+
+<section anchor="query-status-of-a-grant"><name>Query Status of a Grant</name>
+<t>The status of a grant is queried by sending a HTTP GET request to the grant's resource URL as shown by the following example.</t>
+
+<sourcecode type="http">GET /grants/4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25 
+Host: as.example.com
+Authorization: Bearer 2YotnFZFEjr1zCsicMWpAA
+</sourcecode>
+<t>The authorization server will respond with a JSON-formated response as shown in the folling example:</t>
+
+<sourcecode type="http">HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store
+Content-Type: application/json
+
+{ 
+  &quot;scope&quot;: &quot;read&quot;
+}
+</sourcecode>
+<t>The privileges associated with the grant will be provided in a JSON object with the following fields:</t>
+
+<ul>
+<li><t><tt>scope</tt>: String value as defined in <xref target="RFC6749"></xref> representing the scope associated with the grant.</t>
+</li>
+<li><t><tt>authorization_details</tt>: JSON Object as defined in <xref target="I-D.ietf-oauth-rar"></xref>.</t>
+</li>
+<li><t><tt>claims</tt>: JSON object as defined in <xref target="OpenID"></xref>.</t>
+</li>
+</ul>
+<t>The response structure MAY also include further elements defined by other extensions.</t>
+</section>
+
+<section anchor="revoke-grant"><name>Revoke Grant</name>
+<t>To revoke a grant, the client sends a HTTP DELETE request to the grant's resource URL. The authorization server responds with a HTTP status code 204 and an empty response body.</t>
+<t>This is illustrated by the following example.</t>
+
+<sourcecode type="http">DELETE /grants/4d276a8ab980c436b4ffe0c1ff56c049b27e535b6f1266e734d9bca992509c25 
+Host: as.example.com
+Authorization: Bearer 2YotnFZFEjr1zCsicMWpAA
+
+HTTP/1.1 204 No Content
+</sourcecode>
+</section>
+
+<section anchor="error-responses"><name>Error Responses</name>
+<t>If the resource URL is unknown, the authorization server responds with HTTP status code 400.</t>
+<t>If the client is not authorized to perform a call, the authorization server responds with HTTP status code 403.</t>
+<t>If the request lacks a valid access token, the authorization server responds with HTTP status code 401.</t>
+</section>
+</section>
+
+<section anchor="Privacy"><name>Privacy Consideration</name>
+<t>tracking via grant_id(?)</t>
+</section>
+
+<section anchor="Security"><name>Security Considerations</name>
+<t>no credentials</t>
+</section>
+
+</middle>
+
+<back>
+<references><name>Informative References</name>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-rar.xml"/>
+<reference anchor="OpenID" target="http://openid.net/specs/openid-connect-core-1_0.html">
+  <front>
+    <title>OpenID Connect Core 1.0 incorporating errata set 1</title>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura">
+      <organization>NRI</organization>
+    </author>
+    <author fullname="John Bradley" initials="J." surname="Bradley">
+      <organization>Ping Identity</organization>
+    </author>
+    <author fullname="Mike Jones" initials="M." surname="Jones">
+      <organization>Microsoft</organization>
+    </author>
+    <author fullname="Breno de Medeiros" initials="B." surname="de Medeiros">
+      <organization>Google</organization>
+    </author>
+    <author fullname="Chuck Mortimore" initials="C." surname="Mortimore">
+      <organization>Salesforce</organization>
+    </author>
+    <date year="2014" month="Nov" day="8"></date>
+  </front>
+</reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6749.xml"/>
+</references>
+
+<section anchor="iana-considerations"><name>IANA Considerations</name>
+<t>grant_id</t>
+<t>grant<em>id</em>mode</t>
+<t>metadata - grant management supported, endpoint location</t>
+</section>
+
+<section anchor="Acknowledgements"><name>Acknowledgements</name>
+</section>
+
+<section anchor="notices"><name>Notices</name>
+<t>Copyright (c) 2020 The OpenID Foundation.</t>
+<t>The OpenID Foundation (OIDF) grants to any Contributor, developer, implementer, or other interested party a non-exclusive, royalty free, worldwide copyright license to reproduce, prepare derivative works from, distribute, perform and display, this Implementers Draft or Final Specification solely for the purposes of (i) developing specifications, and (ii) implementing Implementers Drafts and Final Specifications based on such documents, provided that attribution be made to the OIDF as the source of the material, but that such attribution does not indicate an endorsement by the OIDF.</t>
+<t>The technology described in this specification was made available from contributions from various sources, including members of the OpenID Foundation and others. Although the OpenID Foundation has taken steps to help ensure that the technology is available for distribution, it takes no position regarding the validity or scope of any intellectual property or other rights that might be claimed to pertain to the implementation or use of the technology described in this specification or the extent to which any license under such rights might or might not be available; neither does it represent that it has made any independent effort to identify any such rights. The OpenID Foundation and the contributors to this specification make no (and hereby expressly disclaim any) warranties (express, implied, or otherwise), including implied warranties of merchantability, non-infringement, fitness for a particular purpose, or title, related to this specification, and the entire risk as to implementing this specification is assumed by the implementer. The OpenID Intellectual Property Rights policy requires contributors to offer a patent promise not to assert certain patent claims against other contributors and against implementers. The OpenID Foundation invites any interested party to bring to its attention any copyrights, patents, patent applications, or other proprietary rights that may cover technology that may be required to practice this specification.</t>
+</section>
+
+<section anchor="document-history"><name>Document History</name>
+<t>[[ To be removed from the final specification ]]</t>
+<t>-00</t>
+
+<ul>
+<li><t>initial revision</t>
+</li>
+</ul>
+</section>
+
+</back>
+
+</rfc>
