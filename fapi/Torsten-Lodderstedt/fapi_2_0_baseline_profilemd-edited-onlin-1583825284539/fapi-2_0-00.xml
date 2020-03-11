@@ -112,9 +112,9 @@ impersonate the endpoints and conduct man-in-the-middle attacks.</t>
 </li>
 <li><t>OAuth 2.0 Mutual-TLS Client Authentication <xref target="RFC8705"></xref></t>
 </li>
-<li><t>OAuth 2.0 Pushed Authorization Requests (PAR) <xref target="I-D.lodderstedt-oauth-par"></xref></t>
+<li><t>OAuth 2.0 Pushed Authorization Requests (PAR) <xref target="I-D.ietf-oauth-par"></xref></t>
 </li>
-<li><t>OAuth 2.0 Rich Authorization Requests (RAR) <xref target="I-D.lodderstedt-oauth-rar"></xref></t>
+<li><t>OAuth 2.0 Rich Authorization Requests (RAR) <xref target="I-D.ietf-oauth-rar"></xref></t>
 </li>
 <li><t>OAuth 2.0 Authorization Server Metadata <xref target="RFC8414"></xref></t>
 </li>
@@ -131,7 +131,7 @@ impersonate the endpoints and conduct man-in-the-middle attacks.</t>
 <li><t>MUST support the authorization code grant described in <xref target="RFC6749"></xref></t>
 </li>
 <li><t>MUST support client-authenticated pushed authorization requests
-according to <xref target="I-D.lodderstedt-oauth-par"></xref></t>
+according to <xref target="I-D.ietf-oauth-par"></xref></t>
 </li>
 <li><t>MUST NOT support authorization requests sent without
 <xref target="I-D.lodderstedt-oauth-par"></xref> or authorization request parameters
@@ -140,7 +140,7 @@ sent outside of the PAR request, except for
 </li>
 <li><t>MUST NOT support pushed authorization requests without client authentication</t>
 </li>
-<li><t>MUST support rich authorization requests according to <xref target="I-D.lodderstedt-oauth-rar"></xref></t>
+<li><t>MUST support rich authorization requests according to <xref target="I-D.ietf-oauth-rar"></xref></t>
 </li>
 <li><t>MUST support confidential clients as defined in <xref target="RFC6749"></xref></t>
 </li>
@@ -198,7 +198,7 @@ and optional <tt>acr</tt> value in ID Token.</t>
 <li><t>MUST use the authorization code grant described in <xref target="RFC6749"></xref></t>
 </li>
 <li><t>MUST use pushed authorization requests according to
-<xref target="I-D.lodderstedt-oauth-par"></xref></t>
+<xref target="I-D.ietf-oauth-par"></xref></t>
 </li>
 <li><t>MUST use sender-constrained access
 tokens using Mutual TLS as described in <xref target="RFC8705"></xref></t>
@@ -221,7 +221,7 @@ OAuth 2.0 Bearer Token Usage [RFC6750]</t>
 HTTP-date as in section 7.1.1.1 of [RFC7231], e.g.,
 <tt>x-fapi-auth-date: Tue, 11 Sep 2012 19:43:31 GMT</tt></t>
 </li>
-<li><t>MAY send the customerâ€™s IP address if this data is available in
+<li><t>MAY send the customer’s IP address if this data is available in
 the <tt>x-fapi-customer-ip-address</tt> header, e.g.,
 <tt>x-fapi-customer-ip-address: 198.51.100.119</tt></t>
 </li>
@@ -391,13 +391,13 @@ c770aef3-6784-41f7-8e0e-ff5f97bddb3a</tt></t>
 <back>
 <references><name>Normative References</name>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6749.xml"/>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7662.xml"/>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8414.xml"/>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7525.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8414.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8705.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7662.xml"/>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6797.xml"/>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6750.xml"/>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7636.xml"/>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8705.xml"/>
 <reference anchor="OpenID" target="http://openid.net/specs/openid-connect-core-1_0.html">
   <front>
     <title>OpenID Connect Core 1.0 incorporating errata set 1</title>
@@ -421,7 +421,9 @@ c770aef3-6784-41f7-8e0e-ff5f97bddb3a</tt></t>
 </reference>
 </references>
 <references><name>Informative References</name>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.lodderstedt-oauth-par.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-rar.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-security-topics.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-par.xml"/>
 <reference anchor="preload" target="https://hstspreload.org/">
   <front>
     <title>HSTS Preload List Submission</title>
@@ -431,8 +433,7 @@ c770aef3-6784-41f7-8e0e-ff5f97bddb3a</tt></t>
     <date></date>
   </front>
 </reference>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.lodderstedt-oauth-rar.xml"/>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-security-topics.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.lodderstedt-oauth-par.xml"/>
 </references>
 
 </back>

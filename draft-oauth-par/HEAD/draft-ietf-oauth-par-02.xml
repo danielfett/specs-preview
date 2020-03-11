@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- name="GENERATOR" content="github.com/mmarkdown/mmark Mmark Markdown Processor - mmark.miek.nl" -->
+<rfc version="3" ipr="trust200902" docName="draft-ietf-oauth-par-02" submissionType="IETF" category="std" xml:lang="en" xmlns:xi="http://www.w3.org/2001/XInclude" consensus="true">
+
+<front>
+<title abbrev="OAuth PAR">OAuth 2.0 Pushed Authorization Requests</title><seriesInfo value="draft-ietf-oauth-par-02" stream="IETF" status="standard" name="Internet-Draft"></seriesInfo>
+<author initials="T." surname="Lodderstedt" fullname="Torsten Lodderstedt"><organization>yes.com</organization><address><postal><street></street>
+</postal><email>torsten@lodderstedt.net</email>
+</address></author>
+<author initials="B." surname="Campbell" fullname="Brian Campbell"><organization>Ping Identity</organization><address><postal><street></street>
+</postal><email>bcampbell@pingidentity.com</email>
+</address></author>
+<author initials="N." surname="Sakimura" fullname="Nat Sakimura"><organization>Nomura Research Institute</organization><address><postal><street></street>
+</postal><email>nat@sakimura.org</email>
+</address></author>
+<author initials="D." surname="Tonge" fullname="Dave Tonge"><organization>Moneyhub Financial Technology</organization><address><postal><street></street>
+</postal><email>dave@tonge.org</email>
+</address></author>
+<author initials="F." surname="Skokan" fullname="Filip Skokan"><organization>Auth0</organization><address><postal><street></street>
+</postal><email>panva.ip@gmail.com</email>
+</address></author>
+<date/>
+<area>Security</area>
+<workgroup>Web Authorization Protocol</workgroup>
+<keyword>security</keyword>
+<keyword>oauth2</keyword>
+
+<abstract>
+<t>This document defines the pushed authorization request endpoint, which allows
+clients to push the payload of an OAuth 2.0 authorization request to the
+authorization server via a direct request and provides them
+with a request URI that is used as reference to the data in a subsequent authorization request.</t>
+</abstract>
+
+</front>
+
+<middle>
+
+<section anchor="Introduction"><name>Introduction</name>
+<t>In OAuth <xref target="RFC6749"></xref> authorization request parameters are typically sent as URI query
+parameters via redirection in the user-agent. This is simple but also yields challenges:</t>
+
+<ul>
+<li><t>There is no cryptographic integrity and authenticity protection, i.e. the request can be modified on its way through the user-agent and attackers can impersonate legitimate clients.</t>
+</li>
+<li><t>There is no mechanism to ensure confidentiality of the request parameters.</t>
+</li>
+<li><t>Authorization request URLs can become quite large, especially in scenarios requiring fine-grained authorization data.</t>
+</li>
+</ul>
+<t>JWT Secured Authorization Request (JAR) <xref target="I-D.ietf-oauth-jwsreq"></xref> provides solutions for those challenges by allowing OAuth clients to wrap authorization request parameters in a signed, and optionally encrypted, JSON Web Token (JWT), the so-called &quot;Request Object&quot;.</t>
+<t>In order to cope with the size restrictions, JAR introduces the <tt>request_uri</tt> parameter that allows clients to send a reference to a request object instead of the request object itself.</t>
+<t>This document complements JAR by providing an interoperable way to push the payload of a request object directly to the AS in exchange for a <tt>request_uri</tt>.</t>
+<t>It also allows for clients to push the form encoded authorization request parameters to the AS in order to exchange them for a request URI that the client can use in a subsequent authorization request.</t>
+<t>For example, the following authorization request,</t>
+
+<artwork>  GET /authorize?response_type=code
+   &amp;client_id=s6BhdRkqt3&amp;state=af0ifjsldkj
+   &amp;redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb HTTP/1.1
+  Host: as.example.com
+</artwork>
+<t>could be pushed directly to the AS by the client as follows:</t>
+
+<artwork>  POST /as/par HTTP/1.1
+  Host: as.example.com
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
+
+  response_type=code
+  &amp;client_id=s6BhdRkqt3&amp;state=af0ifjsldkj
+  &amp;redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb
+</artwork>
+<t>The AS responds with a request URI,</t>
+
+<artwork>  HTTP/1.1 201 Created
+  Cache-Control: no-cache, no-store
+  Content-Type: application/json
+
+  {
+
+    &quot;request_uri&quot;: &quot;urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2&quot;,
+    &quot;expires_in&quot;: 90
+  }
+</artwork>
+<t>which is used by the client in the subsequent authorization request as follows,</t>
+
+<artwork>  GET /authorize?request_uri=
+    urn%3Aexample%3Abwc4JK-ESC0w8acc191e-Y1LTC2 HTTP/1.1
+</artwork>
+<t>The pushed authorization request endpoint fosters OAuth security by providing all clients a simple means for an integrity protected authorization request, but it also allows clients requiring an even higher security level, especially cryptographically confirmed non-repudiation, to explicitly adopt JWT-based request objects.</t>
+<t>As a further benefit, the pushed authorization request allows the AS to authenticate the clients before any user interaction happens, i.e., the AS may refuse unauthorized requests much earlier in the process and has much higher confidence in the client's identity in the authorization process than before.</t>
+<t>This is directly utilized by this draft to allow confidential clients to set the redirect URI for
+every authorization request, which gives them more flexibility in building redirect URI. And if the client IDs and credentials are managed by some external authority (e.g. a certification authority), explicit client registration with the particular AS could practically be skipped.</t>
+
+<section anchor="conventions-and-terminology"><name>Conventions and Terminology</name>
+<t>The key words &quot;MUST&quot;, &quot;MUST NOT&quot;, &quot;REQUIRED&quot;, &quot;SHALL&quot;, &quot;SHALL
+NOT&quot;, &quot;SHOULD&quot;, &quot;SHOULD NOT&quot;, &quot;RECOMMENDED&quot;, &quot;NOT RECOMMENDED&quot;,
+&quot;MAY&quot;, and &quot;OPTIONAL&quot; in this document are to be interpreted as
+described in BCP 14 <xref target="RFC2119"></xref> <xref target="RFC8174"></xref> when, and only when, they
+appear in all capitals, as shown here.</t>
+<t>This specification uses the terms &quot;access token&quot;, &quot;refresh token&quot;,
+&quot;authorization server&quot;, &quot;resource server&quot;, &quot;authorization endpoint&quot;,
+&quot;authorization request&quot;, &quot;authorization response&quot;, &quot;token endpoint&quot;,
+&quot;grant type&quot;, &quot;access token request&quot;, &quot;access token response&quot;, and
+&quot;client&quot; defined by The OAuth 2.0 Authorization Framework <xref target="RFC6749"></xref>.</t>
+</section>
+</section>
+
+<section anchor="pushed-authorization-request-endpoint"><name>Pushed Authorization Request Endpoint</name>
+<t>The pushed authorization request endpoint is an HTTP API at the authorization server that accepts POST requests with parameters in the HTTP request entity-body using the <tt>application/x-www-form-urlencoded</tt> format with a character encoding of UTF-8 as described in Appendix B of <xref target="RFC6749"></xref>.</t>
+<t>The endpoint accepts the parameters defined in <xref target="RFC6749"></xref> for the authorization endpoint as well as all applicable extensions defined for the authorization endpoint. Some examples of such extensions include PKCE <xref target="RFC7636"></xref>, Resource Indicators <xref target="I-D.ietf-oauth-resource-indicators"></xref>, and OpenID Connect <xref target="OIDC"></xref>.</t>
+<t>The rules for client authentication as defined in <xref target="RFC6749"></xref> for token endpoint requests, including the applicable authentication methods, apply for the pushed authorization request endpoint as well. If applicable, the <tt>token_endpoint_auth_method</tt> client metadata parameter indicates the registered authentication method for the client to use when making direct requests to the authorization server, including requests to the pushed authorization request endpoint.</t>
+<t>Note that there's some potential ambiguity around the appropriate audience
+value to use when JWT client assertion based authentication is employed. To address that ambiguity the issuer identifier URL of the AS according to <xref target="RFC8414"></xref> SHOULD be used as the value of the audience. In order to facilitate interoperability the AS MUST accept its issuer identifier, token endpoint URL, or pushed authorization request endpoint URL as values that identify it as an intended audience.</t>
+
+<section anchor="request"><name>Request</name>
+<t>A client can send all the parameters that usually comprise an authorization request to the pushed authorization request endpoint. A basic parameter set will typically include:</t>
+
+<ul>
+<li><t><tt>client_id</tt></t>
+</li>
+<li><t><tt>response_type</tt></t>
+</li>
+<li><t><tt>redirect_uri</tt></t>
+</li>
+<li><t><tt>scope</tt></t>
+</li>
+<li><t><tt>state</tt></t>
+</li>
+<li><t><tt>code_challenge</tt></t>
+</li>
+<li><t><tt>code_challenge_method</tt></t>
+</li>
+</ul>
+<t>Depending on client type and authentication method, the request might also include other parameters for client authentication such as the <tt>client_secret</tt> parameter, the <tt>client_assertion</tt> parameter and the <tt>client_assertion_type</tt> parameter. The <tt>request_uri</tt> authorization request parameter MUST NOT be provided in this case (see <xref target="request_parameter"></xref>).</t>
+<t>The client adds the parameters in <tt>x-www-form-urlencoded</tt> format with a character encoding of UTF-8 as described in Appendix B of <xref target="RFC6749"></xref> to the body of an HTTP POST request. If applicable, the client also adds client credentials to the request header or the request body using the same rules as for token endpoint requests.</t>
+<t>This is illustrated by the following example:</t>
+
+<artwork>  POST /as/par HTTP/1.1
+  Host: as.example.com
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
+
+  response_type=code&amp;
+  state=af0ifjsldkj&amp;
+  client_id=s6BhdRkqt3&amp;
+  redirect_uri=https%3A%2F%2Fclient.example.org%2Fcb&amp;
+  code_challenge=K2-ltc83acc4h0c9w6ESC_rEMTJ3bww-uCHaoeK1t8U&amp;
+  code_challenge_method=S256&amp;
+  scope=ais
+</artwork>
+<t>The AS MUST process the request as follows:</t>
+
+<ol>
+<li><t>The AS MUST authenticate the client in the same way as at the token endpoint.</t>
+</li>
+<li><t>The AS MUST reject the request if the <tt>request_uri</tt> authorization request parameter is provided.</t>
+</li>
+<li><t>The AS MUST validate the request in the same way as at the authorization endpoint. For example, the authorization server checks whether the redirect URI matches one of the redirect URIs configured for the client. It MUST also check whether the client is authorized for the <tt>scope</tt> for which it is requesting access. This validation allows the authorization server to refuse unauthorized or fraudulent requests early.</t>
+</li>
+</ol>
+<t>The AS MAY allow confidential clients to establish per-authorization request redirect URIs with every pushed authorization request. This is possible since, in contrast to <xref target="RFC6749"></xref>, this specification gives the AS the ability to authenticate and authorize clients before the actual authorization request is performed.</t>
+<t>This feature gives clients more flexibility in building redirect URIs and, if the client IDs and credentials
+are managed by some authority (CA or other type), the explicit client registration with the particular AS (manually or via dynamic client registration <xref target="RFC7591"></xref>) could practically be skipped. This
+makes this mechanism especially useful for clients interacting with a federation of ASs (or OpenID Connect OPs),
+for example in Open Banking, where the certificate is provided as part of a federated PKI.</t>
+</section>
+
+<section anchor="successful-response"><name>Successful Response</name>
+<t>If the verification is successful, the server MUST generate a request URI and return a JSON response that contains <tt>request_uri</tt> and <tt>expires_in</tt> members at the top level with <tt>201 Created</tt> HTTP response code.</t>
+
+<ul>
+<li><t><tt>request_uri</tt> : The request URI corresponding to the authorization request posted. This URI is used as reference to the respective request data in the subsequent authorization request only. The way the authorization process obtains the authorization request data is at the discretion of the authorization server and out of scope of this specification. There is no need to make the authorization request data available to other parties via this URI.</t>
+</li>
+<li><t><tt>expires_in</tt> : A JSON number that represents the lifetime of the request URI in seconds. The request URI lifetime is at the discretion of the AS.</t>
+</li>
+</ul>
+<t>The <tt>request_uri</tt> value MUST be generated using a cryptographically strong pseudorandom algorithm such that it is computationally infeasible to predict or guess a valid value.</t>
+<t>The <tt>request_uri</tt> MUST be bound to the client that posted the authorization request.</t>
+<t>Since the request URI can be replayed, its lifetime SHOULD be short and preferably limited to one-time use.</t>
+<t>The following is an example of such a response:</t>
+
+<artwork>  HTTP/1.1 201 Created
+  Content-Type: application/json
+  Cache-Control: no-cache, no-store
+
+  {
+    &quot;request_uri&quot;: &quot;urn:example:bwc4JK-ESC0w8acc191e-Y1LTC2&quot;,
+    &quot;expires_in&quot;: 3600
+  }
+</artwork>
+</section>
+
+<section anchor="error_response"><name>Error Response</name>
+<t>For an error the authorization server sets an appropriate HTTP status code and MAY include additional error parameters in the entity-body of the HTTP response using the format specified for the token endpoint in Section 5.2 of <xref target="RFC6749"></xref>.</t>
+<t>If the authorization server sets an error code, it SHOULD be one of the defined codes for the token endpoint in Section 5.2 or for the authorization endpoint in Sections 4.1.2.1 and 4.2.2.1 of <xref target="RFC6749"></xref>, or by an OAuth extension if one is involved in the initial processing of authorization request that was pushed. Since initial processing of the pushed authorisation request doesn't involve resource owner interaction, error codes related to user interaction, such as <tt>consent_required</tt> defined by <xref target="OIDC"></xref>, are not returned.</t>
+<t>In addition to the error codes above, the pushed authorization request endpoint specifies use of the following HTTP status codes:</t>
+
+<ul>
+<li><t>405: If the request did not use POST, the authorization server responds with an HTTP 405 (Method Not Allowed) status code.</t>
+</li>
+<li><t>413: If the request size was beyond the upper bound that the authorization server allows, the authorization server responds with an HTTP 413 (Payload Too Large) status code.</t>
+</li>
+<li><t>429: If the request from the client for a time period goes beyond the number the authorization server allows, the authorization server responds with an HTTP 429 (Too Many Requests) status code.</t>
+</li>
+</ul>
+<t>The following is an example of an error response from the pushed authorization request endpoint:</t>
+
+<artwork>  HTTP/1.1 400 Bad Request
+  Content-Type: application/json
+  Cache-Control: no-cache, no-store
+
+  {
+    &quot;error&quot;: &quot;invalid_request&quot;,
+    &quot;error_description&quot;:
+      &quot;The redirect_uri is not valid for the given client&quot;
+  }
+</artwork>
+</section>
+</section>
+
+<section anchor="request_parameter"><name>&quot;request&quot; Parameter</name>
+<t>Clients MAY use the <tt>request</tt> parameter as defined in JAR <xref target="I-D.ietf-oauth-jwsreq"></xref> to push a request object JWT to the AS. The rules for processing, signing, and encryption of the request object as defined in JAR <xref target="I-D.ietf-oauth-jwsreq"></xref> apply. When the <tt>application/x-www-form-urlencoded</tt> HTTP entity-body <tt>request</tt> parameter is used, the request object MUST contain all the authorization request parameters as claims of the JWT. Additional request parameters as required by the given client authentication method are to be included as 'application/x-www-form-urlencoded' parameters in the HTTP request entity-body (e.g. Mutual TLS client authentication <xref target="I-D.ietf-oauth-mtls"></xref> uses the <tt>client_id</tt> HTTP request parameter while JWT assertion based client authentication <xref target="RFC7523"></xref> uses <tt>client_assertion</tt> and <tt>client_assertion_type</tt>).</t>
+<t>The following is an example of a pushed authorization request using a signed request object. The client is authenticated by its client secret using the HTTP Basic Authentication scheme specified in Section 2.3.1 of <xref target="RFC6749"></xref>:</t>
+
+<artwork>  POST /as/par HTTP/1.1
+  Host: as.example.com
+  Content-Type: application/x-www-form-urlencoded
+  Authorization: Basic czZCaGRSa3F0Mzo3RmpmcDBaQnIxS3REUmJuZlZkbUl3
+
+  request=eyJraWQiOiJrMmJkYyIsImFsZyI6IlJTMjU2In0.eyJpc3MiOiJzNkJoZ
+  FJrcXQzIiwiYXVkIjoiaHR0cHM6Ly9zZXJ2ZXIuZXhhbXBsZS5jb20iLCJyZXNwb2
+  5zZV90eXBlIjoiY29kZSIsImNsaWVudF9pZCI6InM2QmhkUmtxdDMiLCJyZWRpcmV
+  jdF91cmkiOiJodHRwczovL2NsaWVudC5leGFtcGxlLm9yZy9jYiIsInNjb3BlIjoi
+  YWlzIiwic3RhdGUiOiJhZjBpZmpzbGRraiIsImNvZGVfY2hhbGxlbmdlIjoiSzItb
+  HRjODNhY2M0aDBjOXc2RVNDX3JFTVRKM2J3dy11Q0hhb2VLMXQ4VSIsImNvZGVfY2
+  hhbGxlbmdlX21ldGhvZCI6IlMyNTYifQ.O49ffUxRPdNkN3TRYDvbEYVr1CeAL64u
+  W4FenV3n9WlaFIRHeFblzv-wlEtMm8-tusGxeE9z3ek6FxkhvvLEqEpjthXnyXqqy
+  Jfq3k9GSf5ay74ml_0D6lHE1hy-kVWg7SgoPQ-GB1xQ9NRhF3EKS7UZIrUHbFUCF0
+  MsRLbmtIvaLYbQH_Ef3UkDLOGiU7exhVFTPeyQUTM9FF-u3K-zX-FO05_brYxNGLh
+  VkO1G8MjqQnn2HpAzlBd5179WTzTYhKmhTiwzH-qlBBI_9GLJmE3KOipko9TfSpa2
+  6H4JOlMyfZFl0PCJwkByS0xZFJ2sTo3Gkk488RQohhgt1I0onw
+</artwork>
+<t>The AS needs to take the following steps beyond the processing rules defined in <xref target="request"></xref>:</t>
+
+<ol>
+<li><t>If applicable, the AS decrypts the request object as specified in JAR <xref target="I-D.ietf-oauth-jwsreq"></xref>, section 6.1.</t>
+</li>
+<li><t>The AS validates the request object signature as specified in JAR <xref target="I-D.ietf-oauth-jwsreq"></xref>, section 6.2.</t>
+</li>
+<li><t>If the client is a confidential client, the authorization server MUST check whether the authenticated <tt>client_id</tt> matches the <tt>client_id</tt> claim in the request object. If they do not match, the authorization server MUST refuse to process the request. It is at the authorization server's discretion to require the <tt>iss</tt> claim to match the <tt>client_id</tt> as well.</t>
+</li>
+</ol>
+
+<section anchor="error-responses-for-request-object"><name>Error responses for Request Object</name>
+<t>This section gives the error responses that go beyond the basic <xref target="error_response"></xref>.</t>
+
+<section anchor="authentication-required"><name>Authentication Required</name>
+<t>If the signature validation fails, the authorization server returns a <tt>401 Unauthorized</tt> HTTP error response. The same applies if the <tt>client_id</tt> or, if applicable, the <tt>iss</tt> claim in the request object do not match the authenticated <tt>client_id</tt>.</t>
+</section>
+</section>
+</section>
+
+<section anchor="authorization-request"><name>Authorization Request</name>
+<t>The client uses the <tt>request_uri</tt> value returned by the authorization server as the authorization request parameter <tt>request_uri</tt> as defined in JAR.</t>
+
+<artwork>  GET /authorize?request_uri=
+    urn%3Aexample%3Abwc4JK-ESC0w8acc191e-Y1LTC2 HTTP/1.1
+</artwork>
+<t>Clients are encouraged to use the request URI as the only parameter in order to use the integrity and authenticity provided by the pushed authorization request.</t>
+</section>
+
+<section anchor="authorization-server-metadata"><name>Authorization Server Metadata</name>
+<t>If the authorization server has a pushed authorization request endpoint, it SHOULD include the following OAuth/OpenID Provider Metadata parameter in discovery responses:</t>
+<t><tt>pushed_authorization_request_endpoint</tt> : The URL of the pushed authorization request endpoint at which the client can post an authorization request and get a request URI in exchange.</t>
+</section>
+
+<section anchor="security-considerations"><name>Security Considerations</name>
+
+<section anchor="request-uri-guessing"><name>Request URI Guessing</name>
+<t>An attacker could attempt to guess and replay a valid request URI value and
+try to impersonate the respective client. The AS MUST consider the considerations
+given in JAR <xref target="I-D.ietf-oauth-jwsreq"></xref>, section 10.2, clause d on request URI entropy.</t>
+</section>
+
+<section anchor="open-redirection"><name>Open Redirection</name>
+<t>An attacker could try register a redirect URI pointing to a site under his control in order to obtain authorization codes or lauch other attacks towards the user. The AS MUST only accept new redirect URIs in the PAR request from confidential clients after sucessful authentication and authorization.</t>
+</section>
+
+<section anchor="request-object-replay"><name>Request Object Replay</name>
+<t>An attacker could replay a request URI captured from a legitimate authorization request. In order to cope with such attacks, the AS SHOULD make the request URIs one-time use.</t>
+</section>
+
+<section anchor="client-policy-change"><name>Client Policy Change</name>
+<t>The client policy might change between the lodging of the request object and the
+authorization request using a particular request object. It is therefore recommended that the AS check the request parameter against the client policy when processing the authorization request.</t>
+</section>
+</section>
+
+<section anchor="Acknowledgements"><name>Acknowledgements</name>
+<t>This specification is based on the work towards <eref target="https://bitbucket.org/openid/fapi/src/master/Financial_API_Pushed_Request_Object.md">Pushed Request Object</eref>
+conducted at the Financial-grade API working group at the OpenID Foundation. We would like to thank the members of the WG for their valuable contributions.</t>
+<t>We would like to thank
+Vladimir Dzhuvinov,
+Aaron Parecki,
+Joseph Heenan,
+and
+Takahiko Kawasaki
+    for their valuable feedback on this draft.</t>
+</section>
+
+<section anchor="iana_considerations"><name>IANA Considerations</name>
+<t>This specification requests registration of the following value in the IANA &quot;OAuth Authorization Server Metadata&quot; registry of <xref target="IANA.OAuth.Parameters"></xref> established by <xref target="RFC8414"></xref>.</t>
+
+<dl spacing="compact">
+<dt>Metadata Name:</dt>
+<dd><t><tt>pushed_authorization_request_endpoint</tt></t>
+</dd>
+<dt>Metadata Description:</dt>
+<dd><t>URL of the authorization server's pushed authorization request endpoint</t>
+</dd>
+<dt>Change Controller:</dt>
+<dd><t>IESG</t>
+</dd>
+<dt>Specification Document(s):</dt>
+<dd><t>[[ this document ]]</t>
+</dd>
+</dl>
+</section>
+
+</middle>
+
+<back>
+<references><name>Normative References</name>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.6749.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
+<reference anchor="OIDC" target="http://openid.net/specs/openid-connect-core-1_0.html">
+  <front>
+    <title>OpenID Connect Core 1.0 incorporating errata set 1</title>
+    <author fullname="Nat Sakimura" initials="N." surname="Sakimura">
+      <organization>NRI</organization>
+    </author>
+    <author fullname="John Bradley" initials="J." surname="Bradley">
+      <organization>Ping Identity</organization>
+    </author>
+    <author fullname="Mike Jones" initials="M." surname="Jones">
+      <organization>Microsoft</organization>
+    </author>
+    <author fullname="Breno de Medeiros" initials="B." surname="de Medeiros">
+      <organization>Google</organization>
+    </author>
+    <author fullname="Chuck Mortimore" initials="C." surname="Mortimore">
+      <organization>Salesforce</organization>
+    </author>
+    <date year="2014" month="Nov" day="8"></date>
+  </front>
+</reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8414.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-jwsreq.xml"/>
+</references>
+<references><name>Informative References</name>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-mtls.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7523.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-resource-indicators.xml"/>
+<reference anchor="IANA.OAuth.Parameters" target="http://www.iana.org/assignments/oauth-parameters">
+  <front>
+    <title>OAuth Parameters</title>
+    <author>
+      <organization>IANA</organization>
+    </author>
+    <date></date>
+  </front>
+</reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7636.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7591.xml"/>
+</references>
+
+<section anchor="document-history"><name>Document History</name>
+<t>[[ To be removed from the final specification ]]</t>
+<t>-02</t>
+<t>*</t>
+<t>-01</t>
+
+<ul spacing="compact">
+<li><t>Use the newish RFC v3 XML and HTML format</t>
+</li>
+<li><t>Added IANA registration request for <tt>pushed_authorization_request_endpoint</tt></t>
+</li>
+<li><t>Changed abbrev to &quot;OAuth PAR&quot;</t>
+</li>
+</ul>
+<t>-00 (WG draft)</t>
+
+<ul spacing="compact">
+<li><t>Reference RFC6749 sec 2.3.1 for client secret basic rather than RFC7617</t>
+</li>
+<li><t>further clarify that a request object JWT contains all the authorization request parameters while client authentication params, if applicable, are outside that JWT as regular form encoded params in HTTP body</t>
+</li>
+</ul>
+<t>-01</t>
+
+<ul spacing="compact">
+<li><t>List <tt>client_id</tt> as one of the basic parameters</t>
+</li>
+<li><t>Explicitly forbid <tt>request_uri</tt> in the processing rules</t>
+</li>
+<li><t>Clarification regarding client authentication and that public clients are allowed</t>
+</li>
+<li><t>Added option to let clients register per-authorization request redirect URIs</t>
+</li>
+<li><t>General clean up and wording improvements</t>
+</li>
+</ul>
+<t>-00</t>
+
+<ul>
+<li><t>first draft</t>
+</li>
+</ul>
+</section>
+
+</back>
+
+</rfc>

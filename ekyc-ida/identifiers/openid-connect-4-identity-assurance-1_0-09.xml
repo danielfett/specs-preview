@@ -1002,15 +1002,6 @@ to state the purpose for the transfer of user data it is asking for.</t>
 
 <back>
 <references><name>Normative References</name>
-<reference anchor="verified_claims.json" target="http://openid.net/schemas/verified_claims-09.json">
-  <front>
-    <title>JSON Schema for assertions using verified_claims</title>
-    <author>
-      <organization>OpenID Foundation</organization>
-    </author>
-    <date year="2020"></date>
-  </front>
-</reference>
 <reference anchor="OpenID-Discovery" target="https://openid.net/specs/openid-connect-discovery-1_0.html">
   <front>
     <title>OpenID Connect Discovery 1.0 incorporating errata set 1</title>
@@ -1027,54 +1018,6 @@ to state the purpose for the transfer of user data it is asking for.</t>
       <organization> Illumila </organization>
     </author>
     <date year="2014" month="Nov" day="8"></date>
-  </front>
-</reference>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7519.xml"/>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8417.xml"/>
-<reference anchor="ISO3166-1" target="https://www.iso.org/standard/63545.html">
-  <front>
-    <title>ISO 3166-1:1997. Codes for the representation of names of&#xA;&#x9;  countries and their subdivisions -- Part 1: Country codes</title>
-    <author surname="International Organization for Standardization">
-      <organization abbrev="ISO">International Organization for&#xA;&#x9;    Standardization</organization>
-    </author>
-    <date year="2013"></date>
-  </front>
-</reference>
-<reference anchor="ISO3166-3" target="https://www.iso.org/standard/63547.html">
-  <front>
-    <title>ISO 3166-1:2013. Codes for the representation of names of countries and their subdivisions -- Part 3: Code for formerly used names of countries</title>
-    <author surname="International Organization for Standardization">
-      <organization abbrev="ISO">International Organization for&#xA;&#x9;    Standardization</organization>
-    </author>
-    <date year="2013"></date>
-  </front>
-</reference>
-
-<reference anchor="verified_claims_request.json" target="http://openid.net/schemas/verified_claims_request-09.json">
-  <front>
-    <title>JSON Schema for requesting verified_claims</title>
-    <author>
-      <organization>OpenID Foundation</organization>
-    </author>
-    <date year="2020"></date>
-  </front>
-</reference>
-<reference anchor="predefined_values_page" target="https://openid.net/wg/ekyc-ida/identifiers/">
-  <front>
-    <title>Overview page for predefined values</title>
-    <author>
-      <organization>OpenID Foundation</organization>
-    </author>
-    <date year="2020"></date>
-  </front>
-</reference>
-<reference anchor="ICAO-Doc9303" target="https://www.icao.int/publications/Documents/9303_p3_cons_en.pdf">
-  <front>
-    <title>Machine Readable Travel Documents, Seventh Edition, 2015, Part 3: Specifications Common to all MRTDs</title>
-    <author surname="INTERNATIONAL CIVIL AVIATION ORGANIZATION">
-      <organization>INTERNATIONAL CIVIL AVIATION ORGANIZATION</organization>
-    </author>
-    <date year="2015"></date>
   </front>
 </reference>
 <reference anchor="OpenID" target="http://openid.net/specs/openid-connect-core-1_0.html">
@@ -1098,8 +1041,74 @@ to state the purpose for the transfer of user data it is asking for.</t>
     <date year="2014" month="Nov" day="8"></date>
   </front>
 </reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.8417.xml"/>
+<reference anchor="verified_claims.json" target="http://openid.net/schemas/verified_claims-09.json">
+  <front>
+    <title>JSON Schema for assertions using verified_claims</title>
+    <author>
+      <organization>OpenID Foundation</organization>
+    </author>
+    <date year="2020"></date>
+  </front>
+</reference>
+<reference anchor="ISO3166-3" target="https://www.iso.org/standard/63547.html">
+  <front>
+    <title>ISO 3166-1:2013. Codes for the representation of names of countries and their subdivisions -- Part 3: Code for formerly used names of countries</title>
+    <author surname="International Organization for Standardization">
+      <organization abbrev="ISO">International Organization for&#xA;&#x9;    Standardization</organization>
+    </author>
+    <date year="2013"></date>
+  </front>
+</reference>
+<reference anchor="ICAO-Doc9303" target="https://www.icao.int/publications/Documents/9303_p3_cons_en.pdf">
+  <front>
+    <title>Machine Readable Travel Documents, Seventh Edition, 2015, Part 3: Specifications Common to all MRTDs</title>
+    <author surname="INTERNATIONAL CIVIL AVIATION ORGANIZATION">
+      <organization>INTERNATIONAL CIVIL AVIATION ORGANIZATION</organization>
+    </author>
+    <date year="2015"></date>
+  </front>
+</reference>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7519.xml"/>
+<reference anchor="verified_claims_request.json" target="http://openid.net/schemas/verified_claims_request-09.json">
+  <front>
+    <title>JSON Schema for requesting verified_claims</title>
+    <author>
+      <organization>OpenID Foundation</organization>
+    </author>
+    <date year="2020"></date>
+  </front>
+</reference>
+<reference anchor="predefined_values_page" target="https://openid.net/wg/ekyc-ida/identifiers/">
+  <front>
+    <title>Overview page for predefined values</title>
+    <author>
+      <organization>OpenID Foundation</organization>
+    </author>
+    <date year="2020"></date>
+  </front>
+</reference>
+<reference anchor="ISO3166-1" target="https://www.iso.org/standard/63545.html">
+  <front>
+    <title>ISO 3166-1:1997. Codes for the representation of names of&#xA;&#x9;  countries and their subdivisions -- Part 1: Country codes</title>
+    <author surname="International Organization for Standardization">
+      <organization abbrev="ISO">International Organization for&#xA;&#x9;    Standardization</organization>
+    </author>
+    <date year="2013"></date>
+  </front>
+</reference>
+
 </references>
 <references><name>Informative References</name>
+<reference anchor="eIDAS" target="https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32014R0910">
+  <front>
+    <title>REGULATION (EU) No 910/2014 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL on electronic identification and trust services for electronic transactions in the internal market and repealing Directive 1999/93/EC</title>
+    <author surname="European Parliament">
+      <organization>European Parliament</organization>
+    </author>
+    <date year="2014" month="July" day="23"></date>
+  </front>
+</reference>
 <reference anchor="NIST-SP-800-63a" target="https://doi.org/10.6028/NIST.SP.800-63a">
   <front>
     <title>NIST Special Publication 800-63A, Digital Identity Guidelines, Enrollment and Identity Proofing Requirements</title>
@@ -1127,17 +1136,8 @@ to state the purpose for the transfer of user data it is asking for.</t>
     <date year="2017" month="June"></date>
   </front>
 </reference>
-<reference anchor="eIDAS" target="https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32014R0910">
-  <front>
-    <title>REGULATION (EU) No 910/2014 OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL on electronic identification and trust services for electronic transactions in the internal market and repealing Directive 1999/93/EC</title>
-    <author surname="European Parliament">
-      <organization>European Parliament</organization>
-    </author>
-    <date year="2014" month="July" day="23"></date>
-  </front>
-</reference>
-<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-jwt-introspection-response.xml"/>
 <xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml/reference.RFC.7662.xml"/>
+<xi:include href="https://xml2rfc.ietf.org/public/rfc/bibxml-ids/reference.I-D.ietf-oauth-jwt-introspection-response.xml"/>
 </references>
 
 <section anchor="iana-considerations"><name>IANA Considerations</name>
