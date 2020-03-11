@@ -1,5 +1,7 @@
 ---
 ---
-# markdown2rfc specs preview
+# Specification Drafts
+
+Created using markdown2rfc
 
 {{site.static_files}}
